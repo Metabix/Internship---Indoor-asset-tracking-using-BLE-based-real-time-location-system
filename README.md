@@ -43,3 +43,51 @@ The following would be the solution components of the project
 		2. A configurable map of BLE receiver unique Id and their location co-ordinates
 		
 		3. Upon receiving UDP data, BLE receiver identifier,the beacon identifier , RSSI value and timestamp are extracted
+		                        BLE-RECIVER-IDENTIFIER
+								                      --->
+										                   BCN-IDENTIFIER
+														                  -->[ RECEIVED-TIMESTAMP -->RSSI VALUE] # FIFO queue of last 20 readings																		                       -->RSSI Value
+																		  -->Running Average RSSI Value
+																		  -->Last Received Timestamp
+		   and stored in an object outlined above. The Timestamp and RSSI values of each beacon received from each receiver is put in a FIFO queue of 20
+		   The running average RSSI value is calculated for 20 readings and stored under beacon identifier along with last beacon timestamp
+		4. Every second the Location engine scans as follows:
+		                   4.a For each beacon identify the top three BLE-RECEIVER-IDENTIFIERs which have the highest value of Running Average RSSI 
+						        Value for that BCN-IDENTIFIER
+						   4.b Convert RSSI Value to distance
+						   4.b Pass the BLE-RECEIVER position,computed distance values of top three to trilateration algorithim to compute the actual postion in x,y,z
+						       coordinates and save them in a position object
+							             POSITION 
+										         --->
+												      BCN-IDENTIFIER
+													                  --> [x,y,z]
+																	  --> Last Received Timestamp 
+																	  
+	    5. A gevent Flask based HTTP API to provide list of beacons found and their computed coordinates by sending the position objects to UI Client when requested
+		6. A gevent Flast based UI server to serve the UI client on browser
+		7. Store the first beacon name, position location of the beacon in SQLite3 database with date and time stamp. If position location changes by 1.5 meters from previous reading 
+		   then insert a new record in database with new timestamp and new position
+		
+		
+		References:
+		    a. Trilateration algorithm in python 
+			                         https://github.com/akshayb6/trilateration-in-3d
+									 https://gist.github.com/marmakoide/6bf9254c4d95d2dec70a869706376de9
+									 https://github.com/noomrevlis/trilateration
+			b. RSSI(RF Received Signal Strength) to distance calculation:
+			                         https://gist.github.com/eklimcz/446b56c0cb9cfe61d575
+			c. Gevent Flask Server
+			                         https://gist.github.com/viksit/b6733fe1afdf5bb84a40
+									 
+4. UI Client:
+        REquirements:
+		    1. Show a static indoor map of a location
+			2. Make one second interval AJAX calls to the server to fetch beacon Positions
+			3. Translate the XY coordinates in to pixels coordinates based on mapping of the location dimensions to pixels
+			4. Draw the map pin object in dark red. 
+			5. Mouse hovering over the Pin should provide a call out listing the Tag Id, X,Y,Z position in meters and tag last received timestamp
+			6. As the tag starts moving mark the trail path in light brown color
+			7. PRovide a button at top to reset all trails
+			
+		REferences:
+		     https://github.com/wrld3d/wrld-indoor-maps-api/blob/master/TUTORIAL-TOOL.md
